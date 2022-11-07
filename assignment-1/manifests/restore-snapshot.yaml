@@ -1,0 +1,7 @@
+apiVersion: shahpratikr.dev/v1alpha1
+kind: Snapshot
+metadata:
+  name: snapshot-1
+spec:
+  pvcname: pv-claim
+  operation: restore
