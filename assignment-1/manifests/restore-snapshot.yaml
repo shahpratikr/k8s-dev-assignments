@@ -1,7 +1,7 @@
 apiVersion: shahpratikr.dev/v1alpha1
-kind: Snapshot
+kind: SnapshotRestore
 metadata:
-  name: snapshot-1
+  generateName: restore-snapshot-
 spec:
-  pvcname: pv-claim
-  operation: restore
+  backupname: pv-claim-snapshot-h5sbl
+  storageclassname: csi-hostpath-sc
