@@ -3,5 +3,5 @@ kind: SnapshotRestore
 metadata:
   generateName: restore-snapshot-
 spec:
-  backupname: pv-claim-snapshot-h5sbl
+  backupname: <PLACEHOLDER>
   storageclassname: csi-hostpath-sc
