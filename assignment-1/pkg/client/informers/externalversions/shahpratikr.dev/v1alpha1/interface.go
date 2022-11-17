@@ -24,8 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Snapshots returns a SnapshotInformer.
-	Snapshots() SnapshotInformer
+	// SnapshotBackups returns a SnapshotBackupInformer.
+	SnapshotBackups() SnapshotBackupInformer
+	// SnapshotRestores returns a SnapshotRestoreInformer.
+	SnapshotRestores() SnapshotRestoreInformer
 }
 
 type version struct {
@@ -39,7 +41,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Snapshots returns a SnapshotInformer.
-func (v *version) Snapshots() SnapshotInformer {
-	return &snapshotInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// SnapshotBackups returns a SnapshotBackupInformer.
+func (v *version) SnapshotBackups() SnapshotBackupInformer {
+	return &snapshotBackupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// SnapshotRestores returns a SnapshotRestoreInformer.
+func (v *version) SnapshotRestores() SnapshotRestoreInformer {
+	return &snapshotRestoreInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

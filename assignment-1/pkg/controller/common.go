@@ -9,10 +9,33 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
+
+	"github.com/shahpratikr/k8s-dev-assignments/assignment-1/pkg/utils"
 )
 
 func SnapshotName(pvc *corev1.PersistentVolumeClaim) string {
-	return pvc.Name + "-snapshot"
+	return pvc.Name + "-snapshot-"
+}
+
+func SnapshotClassname(bgContext context.Context, storageClassName string,
+	clients *utils.Clients) (string, error) {
+	volumeSnapshotClasses, err := getVolumeSnapshotClasses(bgContext,
+		clients.ExternalSnapshotClientSet)
+	if err != nil {
+		return "", err
+	}
+	provisioner, err := getStorageClassProvisioner(bgContext, storageClassName,
+		clients.StorageClientSet)
+	if err != nil {
+		return "", err
+	}
+	for _, snapshotClass := range volumeSnapshotClasses.Items {
+		if snapshotClass.Driver == provisioner {
+			return snapshotClass.GetObjectMeta().GetName(), nil
+		}
+	}
+	return "", fmt.Errorf("volume snapshot class with %s storageclass not found",
+		storageClassName)
 }
 
 func getVolumeSnapshotClasses(bgContext context.Context,
@@ -30,25 +53,6 @@ func getStorageClassProvisioner(bgContext context.Context, storageClassName stri
 		return "", err
 	}
 	return storageClass.Provisioner, nil
-}
-
-func SnapshotClassname(bgContext context.Context, storageClassName string,
-	externalSnapshotClient externalSnapshotClient.Interface,
-	storageClientSet *storagev1.StorageV1Client) (string, error) {
-	volumeSnapshotClasses, err := getVolumeSnapshotClasses(bgContext, externalSnapshotClient)
-	if err != nil {
-		return "", err
-	}
-	provisioner, err := getStorageClassProvisioner(bgContext, storageClassName, storageClientSet)
-	if err != nil {
-		return "", err
-	}
-	for _, snapshotClass := range volumeSnapshotClasses.Items {
-		if snapshotClass.Driver == provisioner {
-			return snapshotClass.GetObjectMeta().GetName(), nil
-		}
-	}
-	return "", fmt.Errorf("volume snapshot class with %s storageclass not found", storageClassName)
 }
 
 func APIGroup() string {

@@ -5,17 +5,24 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: snapshots.shahpratikr.dev
+  name: snapshotbackups.shahpratikr.dev
 spec:
   group: shahpratikr.dev
   names:
-    kind: Snapshot
-    listKind: SnapshotList
-    plural: snapshots
-    singular: snapshot
+    kind: SnapshotBackup
+    listKind: SnapshotBackupList
+    plural: snapshotbackups
+    singular: snapshotbackup
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.progress
+      name: Progress
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -33,20 +40,21 @@ spec:
             type: object
           spec:
             properties:
-              operation:
-                type: string
               pvcname:
                 type: string
+              pvcnamespace:
+                default: default
+                type: string
+            required:
+            - pvcname
             type: object
           status:
             properties:
-              storage:
-                type: string
-              storageclassname:
-                type: string
-              volumesnapshotname:
+              progress:
                 type: string
             type: object
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}

@@ -28,7 +28,8 @@ import (
 
 type ShahpratikrV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	SnapshotsGetter
+	SnapshotBackupsGetter
+	SnapshotRestoresGetter
 }
 
 // ShahpratikrV1alpha1Client is used to interact with features provided by the shahpratikr.dev group.
@@ -36,8 +37,12 @@ type ShahpratikrV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *ShahpratikrV1alpha1Client) Snapshots(namespace string) SnapshotInterface {
-	return newSnapshots(c, namespace)
+func (c *ShahpratikrV1alpha1Client) SnapshotBackups(namespace string) SnapshotBackupInterface {
+	return newSnapshotBackups(c, namespace)
+}
+
+func (c *ShahpratikrV1alpha1Client) SnapshotRestores(namespace string) SnapshotRestoreInterface {
+	return newSnapshotRestores(c, namespace)
 }
 
 // NewForConfig creates a new ShahpratikrV1alpha1Client for the given config.

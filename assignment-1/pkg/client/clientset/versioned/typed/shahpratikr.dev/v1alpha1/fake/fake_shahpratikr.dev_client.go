@@ -28,8 +28,12 @@ type FakeShahpratikrV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeShahpratikrV1alpha1) Snapshots(namespace string) v1alpha1.SnapshotInterface {
-	return &FakeSnapshots{c, namespace}
+func (c *FakeShahpratikrV1alpha1) SnapshotBackups(namespace string) v1alpha1.SnapshotBackupInterface {
+	return &FakeSnapshotBackups{c, namespace}
+}
+
+func (c *FakeShahpratikrV1alpha1) SnapshotRestores(namespace string) v1alpha1.SnapshotRestoreInterface {
+	return &FakeSnapshotRestores{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

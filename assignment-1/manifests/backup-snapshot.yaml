@@ -1,7 +1,6 @@
 apiVersion: shahpratikr.dev/v1alpha1
-kind: Snapshot
+kind: SnapshotBackup
 metadata:
-  name: snapshot-1
+  generateName: backup-snapshot-
 spec:
   pvcname: pv-claim
-  operation: backup
