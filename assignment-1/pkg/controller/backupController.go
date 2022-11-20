@@ -78,6 +78,9 @@ func (bc *BackupController) processItems() bool {
 		fmt.Println(err.Error())
 		return false
 	}
+	if namespace == "" {
+		namespace = "default"
+	}
 	bgContext := context.Background()
 	err = bc.createBackup(bgContext, namespace, name)
 	if err != nil {
@@ -90,16 +93,17 @@ func (bc *BackupController) processItems() bool {
 func (bc *BackupController) createBackup(bgContext context.Context, namespace, name string) error {
 	snapshot, err := bc.SnapshotLister.SnapshotBackups(namespace).Get(name)
 	if err != nil {
+		bc.updateStatus(bgContext, FAILED, namespace, name, "", "")
 		return err
 	}
 	// PVC doesn't exists, return error
 	pvc, err := bc.Clients.KubernetesClientSet.CoreV1().PersistentVolumeClaims(
 		snapshot.Spec.PVCNamespace).Get(bgContext, snapshot.Spec.PVCName, metav1.GetOptions{})
 	if err != nil {
-		bc.updateStatus(bgContext, FAILED, snapshot)
+		bc.updateStatus(bgContext, FAILED, namespace, name, "", "")
 		return err
 	}
-	bc.updateStatus(bgContext, INPROGRESS, snapshot)
+	bc.updateStatus(bgContext, INPROGRESS, namespace, name, "", "")
 	err = bc.createSnapshot(bgContext, pvc, snapshot)
 	if err != nil {
 		return err
@@ -112,7 +116,7 @@ func (bc *BackupController) createSnapshot(bgContext context.Context,
 	snapshotClassname, err := SnapshotClassname(bgContext, *pvc.Spec.StorageClassName,
 		bc.Clients)
 	if err != nil {
-		bc.updateStatus(bgContext, FAILED, snapshot)
+		bc.updateStatus(bgContext, FAILED, snapshot.Namespace, snapshot.Name, "", "")
 		return err
 	}
 	snapTemplate := &volumesnapshotv1.VolumeSnapshot{
@@ -127,29 +131,48 @@ func (bc *BackupController) createSnapshot(bgContext context.Context,
 			},
 		},
 	}
-	_, err = bc.Clients.ExternalSnapshotClientSet.SnapshotV1().VolumeSnapshots(
+	volumeSnapshot, err := bc.Clients.ExternalSnapshotClientSet.SnapshotV1().VolumeSnapshots(
 		pvc.Namespace).Create(bgContext, snapTemplate, metav1.CreateOptions{})
 	if err != nil {
-		bc.updateStatus(bgContext, FAILED, snapshot)
+		bc.updateStatus(bgContext, FAILED, snapshot.Namespace, snapshot.Name, "", "")
 		return err
 	}
-	bc.updateStatus(bgContext, COMPLETED, snapshot)
+	if snapshot.Spec.WaitForVolumeSnapshot {
+		bc.waitForVolumeSnapshot(bgContext, volumeSnapshot)
+	}
+	bc.updateStatus(bgContext, COMPLETED, snapshot.Namespace, snapshot.Name,
+		volumeSnapshot.Name, volumeSnapshot.Namespace)
 	fmt.Println("snapshot created")
 	return nil
 }
 
-func (bc *BackupController) updateStatus(bgContext context.Context, state string,
-	snapshot *v1alpha1.SnapshotBackup) error {
-	snapshotResource, err := bc.SnapshotLister.SnapshotBackups(snapshot.Namespace).Get(
-		snapshot.Name)
+func (bc *BackupController) waitForVolumeSnapshot(bgContext context.Context,
+	volumeSnapshot *volumesnapshotv1.VolumeSnapshot) {
+	state := *volumeSnapshot.Status.ReadyToUse
+	for !state {
+		vsResource, _ := bc.Clients.ExternalSnapshotClientSet.SnapshotV1().VolumeSnapshots(
+			volumeSnapshot.Namespace).Get(bgContext, volumeSnapshot.Name, metav1.GetOptions{})
+		if *vsResource.Status.ReadyToUse {
+			break
+		}
+		state = *vsResource.Status.ReadyToUse
+		time.Sleep(20 * time.Second)
+	}
+}
+
+func (bc *BackupController) updateStatus(bgContext context.Context,
+	state, namespace, name, volumeSnapshotName, volumeSnapshotNamespace string) error {
+	snapshotResource, err := bc.SnapshotLister.SnapshotBackups(namespace).Get(name)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
 	snapshotDeepcopy := snapshotResource.DeepCopy()
-	snapshotDeepcopy.Status.Progress = state
+	snapshotDeepcopy.Status.Status = state
+	snapshotDeepcopy.Status.VolumeSnapshotName = volumeSnapshotName
+	snapshotDeepcopy.Status.VolumeSnapshotNamespace = volumeSnapshotNamespace
 	_, err = bc.Clients.SnapshotClientSet.ShahpratikrV1alpha1().SnapshotBackups(
-		snapshot.Namespace).UpdateStatus(bgContext, snapshotDeepcopy, metav1.UpdateOptions{})
+		namespace).UpdateStatus(bgContext, snapshotDeepcopy, metav1.UpdateOptions{})
 	if err != nil {
 		fmt.Println(err.Error())
 		return err

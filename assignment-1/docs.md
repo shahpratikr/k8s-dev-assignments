@@ -36,7 +36,7 @@ $ exit
 
 - Create CR to take a PVC snapshot
 ```bash
-$ kubectl create -f manifests/backup-snapshot.yaml 
+$ kubectl create -f manifests/backup-snapshot.yaml
 ```
 
 - Verify volume snapshot is created and `ReadyToUse` field is set to `true`

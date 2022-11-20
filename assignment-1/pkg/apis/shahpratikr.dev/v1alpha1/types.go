@@ -6,7 +6,8 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:printcolumn:name="Progress",type=string,JSONPath=`.status.progress`
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+// +kubebuilder:printcolumn:name="VolumeSnapshotName",type=string,JSONPath=`.status.volumesnapshotname`
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 type SnapshotBackup struct {
@@ -27,15 +28,20 @@ type BackupSpec struct {
 	PVCName string `json:"pvcname"`
 	// +kubebuilder:default=default
 	PVCNamespace string `json:"pvcnamespace,omitempty"`
+	// +kubebuilder:default=false
+	WaitForVolumeSnapshot bool `json:"waitforvolumesnapshot,omitempty"`
 }
 
 type BackupStatus struct {
-	Progress string `json:"progress,omitempty"`
+	Status                  string `json:"status,omitempty"`
+	VolumeSnapshotName      string `json:"volumesnapshotname,omitempty"`
+	VolumeSnapshotNamespace string `json:"volumesnapshotnamespace,omitempty"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:printcolumn:name="Progress",type=string,JSONPath=`.status.progress`
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+// +kubebuilder:printcolumn:name="PVCName",type=string,JSONPath=`.status.pvcname`
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 type SnapshotRestore struct {
@@ -54,11 +60,13 @@ type SnapshotRestoreList struct {
 
 type RestoreSpec struct {
 	// +kubebuilder:default=default
-	BackupNamespace  string `json:"backupnamespace,omitempty"`
-	BackupName       string `json:"backupname"`
-	StorageClassname string `json:"storageclassname"`
+	BackupCRNamespace string `json:"backupcrnamespace,omitempty"`
+	BackupCRName      string `json:"backupcrname"`
+	StorageClassname  string `json:"storageclassname"`
 }
 
 type RestoreStatus struct {
-	Progress string `json:"progress,omitempty"`
+	Status       string `json:"status,omitempty"`
+	PVCName      string `json:"pvcname,omitempty"`
+	PVCNamespace string `json:"pvcnamespace,omitempty"`
 }

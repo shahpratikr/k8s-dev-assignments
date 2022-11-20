@@ -19,12 +19,12 @@ func SnapshotName(pvc *corev1.PersistentVolumeClaim) string {
 
 func SnapshotClassname(bgContext context.Context, storageClassName string,
 	clients *utils.Clients) (string, error) {
-	volumeSnapshotClasses, err := getVolumeSnapshotClasses(bgContext,
+	volumeSnapshotClasses, err := volumeSnapshotClasses(bgContext,
 		clients.ExternalSnapshotClientSet)
 	if err != nil {
 		return "", err
 	}
-	provisioner, err := getStorageClassProvisioner(bgContext, storageClassName,
+	provisioner, err := storageClassProvisioner(bgContext, storageClassName,
 		clients.StorageClientSet)
 	if err != nil {
 		return "", err
@@ -38,14 +38,14 @@ func SnapshotClassname(bgContext context.Context, storageClassName string,
 		storageClassName)
 }
 
-func getVolumeSnapshotClasses(bgContext context.Context,
+func volumeSnapshotClasses(bgContext context.Context,
 	externalSnapshotClient externalSnapshotClient.Interface) (
 	*volumesnapshotv1.VolumeSnapshotClassList, error) {
 	return externalSnapshotClient.SnapshotV1().VolumeSnapshotClasses().List(
 		bgContext, metav1.ListOptions{})
 }
 
-func getStorageClassProvisioner(bgContext context.Context, storageClassName string,
+func storageClassProvisioner(bgContext context.Context, storageClassName string,
 	storageClientSet *storagev1.StorageV1Client) (string, error) {
 	storageClass, err := storageClientSet.StorageClasses().Get(bgContext, storageClassName,
 		metav1.GetOptions{})

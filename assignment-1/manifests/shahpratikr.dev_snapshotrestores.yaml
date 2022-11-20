@@ -16,8 +16,11 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.progress
-      name: Progress
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .status.pvcname
+      name: PVCName
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
@@ -40,20 +43,24 @@ spec:
             type: object
           spec:
             properties:
-              backupname:
+              backupcrname:
                 type: string
-              backupnamespace:
+              backupcrnamespace:
                 default: default
                 type: string
               storageclassname:
                 type: string
             required:
-            - backupname
+            - backupcrname
             - storageclassname
             type: object
           status:
             properties:
-              progress:
+              pvcname:
+                type: string
+              pvcnamespace:
+                type: string
+              status:
                 type: string
             type: object
         type: object
