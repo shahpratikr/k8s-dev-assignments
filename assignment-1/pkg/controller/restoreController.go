@@ -93,28 +93,37 @@ func (rc *RestoreController) restoreBackup(bgContext context.Context,
 	snapshot, err := rc.Clients.SnapshotClientSet.ShahpratikrV1alpha1().SnapshotRestores(
 		namespace).Get(bgContext, name, metav1.GetOptions{})
 	if err != nil {
+		rc.updateStatus(bgContext, FAILED, namespace, name, "", "")
 		return err
 	}
-	rc.updateStatus(bgContext, INPROGRESS, snapshot)
+	rc.updateStatus(bgContext, INPROGRESS, namespace, name, "", "")
+	backupCR, err := rc.Clients.SnapshotClientSet.ShahpratikrV1alpha1().SnapshotBackups(
+		snapshot.Spec.BackupCRNamespace).Get(
+		bgContext, snapshot.Spec.BackupCRName, metav1.GetOptions{})
+	if err != nil {
+		rc.updateStatus(bgContext, FAILED, namespace, name, "", "")
+		return err
+	}
 	// Volume snapshot doesn't exists, return error
 	volumeSnapshot, err := rc.Clients.ExternalSnapshotClientSet.SnapshotV1().VolumeSnapshots(
-		snapshot.Spec.BackupNamespace).Get(bgContext, snapshot.Spec.BackupName,
-		metav1.GetOptions{})
+		backupCR.Status.VolumeSnapshotNamespace).Get(bgContext,
+		backupCR.Status.VolumeSnapshotName, metav1.GetOptions{})
 	if err != nil {
-		rc.updateStatus(bgContext, FAILED, snapshot)
+		rc.updateStatus(bgContext, FAILED, namespace, name, "", "")
 		return err
 	}
 	err = rc.deletePVC()
 	if err != nil {
-		rc.updateStatus(bgContext, FAILED, snapshot)
+		rc.updateStatus(bgContext, FAILED, namespace, name, "", "")
 		return err
 	}
 	err = rc.createPVC(bgContext, volumeSnapshot, snapshot)
 	if err != nil {
-		rc.updateStatus(bgContext, FAILED, snapshot)
+		rc.updateStatus(bgContext, FAILED, namespace, name, "", "")
 		return err
 	}
-	rc.updateStatus(bgContext, COMPLETED, snapshot)
+	rc.updateStatus(bgContext, COMPLETED, namespace, name,
+		*volumeSnapshot.Spec.Source.PersistentVolumeClaimName, volumeSnapshot.Namespace)
 	fmt.Printf("PVC %s created\n", *volumeSnapshot.Spec.Source.PersistentVolumeClaimName)
 	return nil
 }
@@ -129,7 +138,8 @@ func (rc *RestoreController) createPVC(bgContext context.Context,
 	apiGroup := APIGroup()
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: *volumeSnapshot.Spec.Source.PersistentVolumeClaimName,
+			Name:      *volumeSnapshot.Spec.Source.PersistentVolumeClaimName,
+			Namespace: volumeSnapshot.Namespace,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			StorageClassName: &snapshot.Spec.StorageClassname,
@@ -154,18 +164,19 @@ func (rc *RestoreController) createPVC(bgContext context.Context,
 	return err
 }
 
-func (rc *RestoreController) updateStatus(bgContext context.Context, state string,
-	snapshot *v1alpha1.SnapshotRestore) error {
-	snapshotResource, err := rc.SnapshotLister.SnapshotRestores(snapshot.Namespace).Get(
-		snapshot.Name)
+func (rc *RestoreController) updateStatus(bgContext context.Context,
+	state, namespace, name, pvcName, pvcNamespace string) error {
+	snapshotResource, err := rc.SnapshotLister.SnapshotRestores(namespace).Get(name)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
 	snapshotDeepcopy := snapshotResource.DeepCopy()
-	snapshotDeepcopy.Status.Progress = state
+	snapshotDeepcopy.Status.Status = state
+	snapshotDeepcopy.Status.PVCName = pvcName
+	snapshotDeepcopy.Status.PVCNamespace = pvcNamespace
 	_, err = rc.Clients.SnapshotClientSet.ShahpratikrV1alpha1().SnapshotRestores(
-		snapshot.Namespace).UpdateStatus(bgContext, snapshotDeepcopy, metav1.UpdateOptions{})
+		namespace).UpdateStatus(bgContext, snapshotDeepcopy, metav1.UpdateOptions{})
 	if err != nil {
 		fmt.Println(err.Error())
 		return err

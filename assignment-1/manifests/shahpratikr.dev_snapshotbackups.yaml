@@ -16,8 +16,11 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.progress
-      name: Progress
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .status.volumesnapshotname
+      name: VolumeSnapshotName
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
@@ -45,12 +48,19 @@ spec:
               pvcnamespace:
                 default: default
                 type: string
+              waitforvolumesnapshot:
+                default: false
+                type: boolean
             required:
             - pvcname
             type: object
           status:
             properties:
-              progress:
+              status:
+                type: string
+              volumesnapshotname:
+                type: string
+              volumesnapshotnamespace:
                 type: string
             type: object
         type: object
