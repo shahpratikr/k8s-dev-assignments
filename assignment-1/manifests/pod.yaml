@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - image: nginx:latest
+    name: test-container
+    volumeMounts:
+    - mountPath: /mnt/data
+      name: volume1
+  volumes:
+  - name: volume1
+    persistentVolumeClaim:
+      claimName: pv-claim

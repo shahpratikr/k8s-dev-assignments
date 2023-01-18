@@ -1,0 +1,7 @@
+apiVersion: shahpratikr.dev/v1alpha1
+kind: SnapshotRestore
+metadata:
+  generateName: restore-snapshot-
+spec:
+  backupCRName: <PLACEHOLDER>
+  storageclassname: csi-hostpath-sc
