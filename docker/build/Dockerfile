@@ -22,8 +22,6 @@ COPY --from=golangci/golangci-lint:v1.50 /usr/bin/golangci-lint /usr/local/bin/
 RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-linux-amd64 \
     && chmod +x /usr/local/bin/kind
 
-RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanister
-
 # Adding CRD documentation generation tool.
 RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs@v0.3.0
 
