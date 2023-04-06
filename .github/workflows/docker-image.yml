@@ -15,8 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: dorny/paths-filter@v2
+      id: filter
       with:
-        id: filter
         filters: |
           modified:
             - 'docker/build/**'
